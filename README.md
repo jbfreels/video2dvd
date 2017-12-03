@@ -10,7 +10,7 @@ $ cdrecord -v dev=/dev/sr0 dvd.iso
 ```
 
 ## TODO
-[ ] check for device in mtab 
-[ ] eject option 
-[ ] iso output option 
-[ ] PAL/NTSC support 
+[ ] check for device in mtab  
+[ ] eject option  
+[ ] iso output option  
+[ ] PAL/NTSC support  
