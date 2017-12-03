@@ -1,30 +1,49 @@
 #!/bin/bash
-# AVI or any video 2 DVD iso Script
-# DvdAuthor 7 and up needs this
-export VIDEO_FORMAT=NTSC
-# Change to "ntsc" if you'd like to create NTSC disks
-format="ntsc"
 
-# Check we have enough command line arguments
+# "PAL" || "NTSC"
+export VIDEO_FORMAT=NTSC # DvdAuthor 7 and up needs this
+ASPECT_RATIO="16:9"
+INPUT_PATH=$1
+INPUT_FILE=$(basename "$INPUT_PATH")
+TMP_PATH=$(mktemp -d --suffix=-video2dvd)
+ISO_FILE="$TMP_PATH/dvd.iso"
+MPG_FILE="$TMP_PATH/$INPUT_FILE.mpg"
+DVD_PATH="$TMP_PATH/dvd"
+DVD_XML="$TMP_PATH/dvd.xml"
+
+function print_paths() {
+    echo "***********************"
+    echo "INPUT_PATH: $INPUT_PATH"
+    echo "INPUT_FILE: $INPUT_FILE"
+    echo "TMP_PATH: $TMP_PATH"
+    echo "ISO_FILE: $ISO_FILE"
+    echo "MPG_FILE: $MPG_FILE"
+    echo "DVD_PATH: $DVD_PATH"
+    echo "***********************"
+}
+
+function depend_check() {
+    # Check for dependencies
+    missing=0
+    dependencies=( "ffmpeg" "dvdauthor" "genisoimage" )
+    for command in ${dependencies[@]}
+    do
+        if ! command -v $command &>/dev/null
+        then
+            echo "$command not found"
+            missing=1
+        fi
+    done
+    return missing
+}
+
 if [ $# -lt 1 ]
 then
-    echo "Usage: $0 <input file 1 ... input file n>"
+    echo "Usage: $0 <video file>"
     exit
 fi
 
-# Check for dependencies
-missing=0
-dependencies=( "ffmpeg" "dvdauthor" "genisoimage" )
-for command in ${dependencies[@]}
-do
-    if ! command -v $command &>/dev/null
-    then
-        echo "$command not found"
-        missing=1
-    fi
-done
-
-if [ $missing = 1 ]
+if [ depend_check = 1 ]
 then
     echo "Please install the missing applications and try again"
     exit
@@ -37,26 +56,21 @@ function emphasise() {
 }
 
 # Check the files exists
-for var in "$@"
-do
-    if [ ! -e "$var" ]
-    then
-        echo "File $var not found"
-        exit
-    fi
-done
+if [ ! -e $INPUT_PATH ]
+then
+    echo "File $INPUT_PATH not found"
+    exit
+fi
 
 emphasise "Converting AVI to MPG"
 
-for var in "$@"
-do
-    ffmpeg -i "$var" -y -target ${format}-dvd -aspect 16:9 "$var.mpg"
-    if [ $? != 0 ]
-    then
-        emphasise "Conversion failed"
-        exit
-    fi
-done
+ffmpeg -i "$INPUT_PATH" -y -target ${VIDEO_FORMAT,,}-dvd -aspect $ASPECT_RATIO "$MPG_FILE"
+if [ $? != 0 ]
+then
+    print_paths
+    emphasise "Conversion failed"
+    exit
+fi
 
 emphasise "Creating XML file"
 
@@ -64,44 +78,40 @@ echo "<dvdauthor>
 <vmgm />
 <titleset>
 <titles>
-<pgc>" > dvd.xml
+<pgc>" > $DVD_XML
 
-for var in "$@"
-do
-    echo "<vob file=\"$var.mpg\" />" >> dvd.xml
-done
+echo "<vob file=\"$MPG_FILE\" />" >> $DVD_XML
 
 echo "</pgc>
 </titles>
 </titleset>
-</dvdauthor>" >> dvd.xml
+</dvdauthor>" >> $DVD_XML
 
 emphasise "Creating DVD contents"
 
-dvdauthor -o dvd -x dvd.xml
+dvdauthor -o $DVD_PATH -x $DVD_XML
 
 if [ $? != 0 ]
 then
+    print_paths
     emphasise "DVD Creation failed"
     exit
 fi
 
 emphasise "Creating ISO image"
 
-genisoimage -dvd-video -o dvd.iso dvd/
+genisoimage -dvd-video -o $ISO_FILE $DVD_PATH
 
 if [ $? != 0 ]
 then
+    print_paths
     emphasise "ISO Creation failed"
     exit
 fi
 
 # Everything passed. Cleanup
-for var in "$@"
-do
-    rm -f "$var.mpg"
-done
-rm -rf dvd/
-rm -f dvd.xml
+#rm -f "$TMP_PATH/$INPUT_PATH.mpg"
+#rm -rf dvd/
+#rm -f dvd.xml
 
-emphasise "Success: dvd.iso image created"
+emphasise "Success: $ISO_FILE image created"

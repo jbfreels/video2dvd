@@ -6,7 +6,7 @@ The plan is, to merge the iso creation and DVD burning.  Offer convenient option
 ## execute
 ```bash
 $ video2dvd my_video.mp4 
-$ cdrecord -v dev=/dev/sr0 dvd.iso
+$ cdrecord -v dev=/dev/sr0 <iso_path>
 ```
 
 ## TODO
@@ -14,3 +14,5 @@ $ cdrecord -v dev=/dev/sr0 dvd.iso
 - [ ] eject option  
 - [ ] iso output option  
 - [ ] PAL/NTSC support  
+- [ ] ffmpeg aspect ratio support
+- [ ] file processing in tmp filder
