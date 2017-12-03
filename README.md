@@ -15,4 +15,5 @@ $ cdrecord -v dev=/dev/sr0 <iso_path>
 - [ ] iso output option  
 - [ ] PAL/NTSC support  
 - [ ] ffmpeg aspect ratio support
-- [ ] file processing in tmp filder
+- [X] file processing in tmp filder
+- [ ] cleanup TMP_PATH
